@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timetable Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+        function generateSubjectFields() {
+            const numSubjects = document.getElementById('numSubjects').value;
+            const subjectDiv = document.getElementById('subjectDiv');
+
+            subjectDiv.innerHTML = '';
+
+            for (let i = 0; i < numSubjects; i++) {
+                const subjectLabel = document.createElement('label');
+                subjectLabel.textContent = `Subject ${i + 1}: `;
+
+                const subjectInput = document.createElement('input');
+                subjectInput.type = 'text';
+                subjectInput.name = `subjectName${i}`;
+                subjectInput.placeholder = `Subject ${i + 1} name`;
+                subjectInput.required = true;
+
+                const hoursInput = document.createElement('input');
+                hoursInput.type = 'number';
+                hoursInput.name = `hours${i}`;
+                hoursInput.placeholder = `Hours for Subject ${i + 1}`;
+                hoursInput.min = 1;
+                hoursInput.required = true;
+
+                const staticCheckbox = document.createElement('input');
+                staticCheckbox.type = 'checkbox';
+                staticCheckbox.name = `static${i}`;
+                staticCheckbox.onclick = function() {
+                    if (staticCheckbox.checked) {
+                        createStaticFields(i, hoursInput.value);
+                    } else {
+                        clearStaticFields(i);
+                    }
+                };
+
+                const staticLabel = document.createElement('label');
+                staticLabel.textContent = ' Static';
+
+                const staticDiv = document.createElement('div');
+                staticDiv.id = `staticFields${i}`;
+                staticDiv.style.display = 'none';
+
+                subjectDiv.appendChild(subjectLabel);
+                subjectDiv.appendChild(subjectInput);
+                subjectDiv.appendChild(hoursInput);
+                subjectDiv.appendChild(staticCheckbox);
+                subjectDiv.appendChild(staticLabel);
+                subjectDiv.appendChild(staticDiv);
+                subjectDiv.appendChild(document.createElement('br'));
+            }
+
+            const submitButton = document.createElement('button');
+            submitButton.textContent = 'Generate Timetable';
+            submitButton.type = 'submit';
+            subjectDiv.appendChild(submitButton);
+        }
+
+        function createStaticFields(subjectIndex, hours) {
+            const staticDiv = document.getElementById(`staticFields${subjectIndex}`);
+            staticDiv.style.display = 'block';
+
+            staticDiv.innerHTML = '';
+
+            for (let i = 0; i < hours; i++) {
+                const dayLabel = document.createElement('label');
+                dayLabel.textContent = `Day for hour ${i + 1}: `;
+
+                const dayInput = document.createElement('select');
+                dayInput.name = `day${subjectIndex}_${i}`;
+                ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach((day, index) => {
+                    const optionDay = document.createElement('option');
+                    optionDay.value = index;
+                    optionDay.text = day;
+                    dayInput.appendChild(optionDay);
+                });
+
+                const periodInput = document.createElement('input');
+                periodInput.type = 'number';
+                periodInput.name = `period${subjectIndex}_${i}`;
+                periodInput.placeholder = 'Period (1-5)';
+                periodInput.min = 1;
+                periodInput.max = 5;
+                periodInput.required = true;
+
+                staticDiv.appendChild(dayLabel);
+                staticDiv.appendChild(dayInput);
+                staticDiv.appendChild(periodInput);
+                staticDiv.appendChild(document.createElement('br'));
+            }
+        }
+
+        function clearStaticFields(subjectIndex) {
+            const staticDiv = document.getElementById(`staticFields${subjectIndex}`);
+            staticDiv.style.display = 'none';
+            staticDiv.innerHTML = '';
+        }
+
+        function displayTimetable(grid) {
+            const timetableDiv = document.getElementById('timetableDiv');
+            timetableDiv.innerHTML = '';
+
+            const table = document.createElement('table');
+            table.border = 1;
+
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const headerRow = document.createElement('tr');
+            const emptyCell = document.createElement('th');
+            headerRow.appendChild(emptyCell);
+            days.forEach(day => {
+                const th = document.createElement('th');
+                th.textContent = day;
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+
+            grid.forEach((periodRow, index) => {
+                const tr = document.createElement('tr');
+                const periodCell = document.createElement('td');
+                periodCell.textContent = `Period ${index + 1}`;
+                tr.appendChild(periodCell);
+
+                periodRow.forEach(subject => {
+                    const td = document.createElement('td');
+                    td.textContent = subject ? subject : 'Free';
+                    tr.appendChild(td);
+                });
+
+                table.appendChild(tr);
+            });
+
+            timetableDiv.appendChild(table);
+        }
+
+        function assignSubjects(grid, subjects) {
+            subjects.forEach(subject => {
+                if (subject.static) {
+                    subject.static_info.forEach(slot => {
+                        grid[slot.period - 1][slot.day] = subject.name;  // Adjust index for zero-based array
+                    });
+                }
+            });
+
+            // Assign non-static subjects randomly
+            const availableSlots = getAvailableSlots(grid);
+            subjects.forEach(subject => {
+                if (!subject.static) {
+                    while (subject.hours > 0 && availableSlots.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * availableSlots.length);
+                        const [period, day] = availableSlots[randomIndex];
+
+                        grid[period][day] = subject.name;
+                        subject.hours--;
+                        availableSlots.splice(randomIndex, 1);
+                    }
+                }
+            });
+        }
+
+        function getAvailableSlots(grid) {
+            const slots = [];
+            for (let i = 0; i < grid.length; i++) {
+                for (let j = 0; j < grid[i].length; j++) {
+                    if (!grid[i][j]) {
+                        slots.push([i, j]);
+                    }
+                }
+            }
+            return slots;
+        }
+
+        window.onload = function() {
+            const subjects = {{ subjects|tojson }};
+            if (subjects.length > 0) {
+                const timetableGrid = createEmptyTimetable(5, 6); // 5 periods, 6 days
+                assignSubjects(timetableGrid, subjects);
+                displayTimetable(timetableGrid);
+            }
+        };
+
+        function createEmptyTimetable(periods, days) {
+            const grid = [];
+            for (let i = 0; i < periods; i++) {
+                grid[i] = new Array(days).fill(null);
+            }
+            return grid;
+        }
+    </script>
+</head>
+<body>
+
+    <h2>Timetable Generator</h2>
+
+    <form id="subjectForm" method="post">
+        <label for="numSubjects">Enter number of theory subjects:</label>
+        <input type="number" id="numSubjects" name="numSubjects" min="1" required>
+        <button type="button" onclick="generateSubjectFields()">Generate Subjects</button>
+
+        <div id="subjectDiv"></div>
+    </form>
+    <br>
+
+    <h3>Generated Timetable</h3>
+    <div id="timetableDiv"></div>
+
+</body>
+</html>
