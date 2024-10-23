@@ -1,9 +1,19 @@
+/* style.css */
+
+/* Reset some default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 body {
     font-family: Arial, sans-serif;
     background-color: #121212; /* Dark background */
     color: #e0e0e0; /* Light text color */
     margin: 0;
     padding: 20px;
+    transition: background-color 0.3s ease; /* Smooth background transition */
 }
 
 .container {
@@ -13,10 +23,16 @@ body {
     background: #1e1e1e; /* Dark container background */
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    transition: box-shadow 0.3s ease; /* Smooth shadow transition */
+}
+
+.container:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7); /* Deeper shadow on hover */
 }
 
 h2, h3 {
     color: #ffffff; /* White headings */
+    margin-bottom: 10px; /* Spacing below headings */
 }
 
 label {
@@ -30,11 +46,12 @@ input[type="number"],
 select {
     width: calc(100% - 22px);
     padding: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 15px; /* Spacing between inputs */
     border: 1px solid #444; /* Dark border */
     border-radius: 4px;
     background-color: #2c2c2c; /* Dark input background */
     color: #ffffff; /* White input text */
+    transition: border-color 0.3s ease; /* Smooth border transition */
 }
 
 input[type="text"]:focus,
@@ -51,10 +68,12 @@ button {
     padding: 10px 15px;
     border-radius: 4px;
     cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth button transition */
 }
 
 button:hover {
     background-color: #0056b3; /* Darker button on hover */
+    transform: translateY(-2px); /* Lift effect */
 }
 
 table {
@@ -69,9 +88,10 @@ table {
 
 .timetable th,
 .timetable td {
-    padding: 10px;
+    padding: 15px; /* Increased padding for cells */
     border: 1px solid #444; /* Dark border for table cells */
     text-align: center;
+    transition: background-color 0.3s ease; /* Smooth background transition */
 }
 
 .timetable th {
@@ -87,3 +107,19 @@ table {
 .timetable td:hover {
     background-color: #444; /* Cell hover effect */
 }
+
+/* Responsive design for smaller screens */
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    h2, h3 {
+        font-size: 1.5em; /* Responsive heading size */
+    }
+}
+
